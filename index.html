@@ -90,7 +90,7 @@ function render(){
   const total=Object.keys(data.completions).length;
   const possible=data.habits.reduce((sum,h)=>{
     const isWeekly = /per week/i.test(h.target||"");
-    return sum + (isWeekly ? DAYS-2 : DAYS);
+    return sum + (isWeekly ? DAYS-3 : DAYS);
   },0);
   const pct=possible?Math.round(total/possible*100):0;
 
@@ -117,7 +117,8 @@ function render(){
   data.habits.forEach(h=>{
     const isWeekly = /per week/i.test(h.target||"");
     const startDay = isWeekly ? 3 : 1;
-    let done=0; for(let dd=startDay; dd<=DAYS; dd++) if(data.completions[h.id+":"+dd]) done++;
+    const endDay = isWeekly ? DAYS-1 : DAYS;
+    let done=0; for(let dd=startDay; dd<=endDay; dd++) if(data.completions[h.id+":"+dd]) done++;
     const countLabel = isWeekly ? `${done} ticks` : `${done}/${DAYS}`;
     html+=`<div class="habit">
       <div class="hrow">
@@ -129,7 +130,7 @@ function render(){
     for(let i=0;i<LEAD;i++) html+=`<div></div>`;
     for(let dd=1;dd<=DAYS;dd++){
       const on=!!data.completions[h.id+":"+dd];
-      const disabled = dd < startDay;
+      const disabled = dd < startDay || dd > endDay;
       if(disabled){
         html+=`<div class="cell off">${dd}</div>`;
       } else {
