@@ -64,7 +64,7 @@ const YEAR=2026, MONTH=7; // August, 0-indexed
 const DAYS=new Date(YEAR, MONTH+1, 0).getDate(); // 31
 const LEAD=(new Date(YEAR, MONTH, 1).getDay()+6)%7; // Monday-start offset
 const WD=["M","T","W","T","F","S","S"];
-const KEY="august-tracker-app-v5";
+const KEY="august-tracker-app-v6";
 const CATS=[
   {cat:"fitness", label:"Fitness"},
   {cat:"nutrition", label:"Nutrition"},
@@ -77,7 +77,7 @@ const DEFAULTS={
     {id:"steps",cat:"fitness",name:"10,000 steps",target:"daily"},
     {id:"protein",cat:"nutrition",name:"120g protein",target:"daily"},
     {id:"noalcohol",cat:"nutrition",name:"No alcohol",target:"daily"},
-    {id:"nospend",cat:"finance",name:"No spend day",target:"daily"}
+    {id:"nospend",cat:"finance",name:"No spend day",target:"2× per week"}
   ],
   completions:{}
 };
