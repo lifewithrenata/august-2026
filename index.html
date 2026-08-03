@@ -64,12 +64,17 @@ const YEAR=2026, MONTH=7; // August, 0-indexed
 const DAYS=new Date(YEAR, MONTH+1, 0).getDate(); // 31
 const LEAD=(new Date(YEAR, MONTH, 1).getDay()+6)%7; // Monday-start offset
 const WD=["M","T","W","T","F","S","S"];
-const KEY="august-tracker-app-v2";
+const KEY="august-tracker-app-v3";
+const CATS=[
+  {cat:"fitness", label:"Fitness"},
+  {cat:"nutrition", label:"Nutrition"}
+];
 const DEFAULTS={
   habits:[
-    {id:"gym",name:"Gym",target:"4× per week"},
-    {id:"padel",name:"Padel",target:"1× per week"},
-    {id:"steps",name:"10,000 steps",target:"daily"}
+    {id:"gym",cat:"fitness",name:"Gym",target:"4× per week"},
+    {id:"padel",cat:"fitness",name:"Padel",target:"1× per week"},
+    {id:"steps",cat:"fitness",name:"10,000 steps",target:"daily"},
+    {id:"protein",cat:"nutrition",name:"120g protein",target:"daily"}
   ],
   completions:{}
 };
@@ -86,10 +91,8 @@ function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">
 
 function render(){
   const total=Object.keys(data.completions).length;
-  const possible=data.habits.reduce((sum,h)=>{
-    const isWeekly = /per week/i.test(h.target||"");
-    return sum + (isWeekly ? DAYS-3 : DAYS);
-  },0);
+  const TRACK_DAYS=DAYS-3;
+  const possible=data.habits.length*TRACK_DAYS;
   const pct=possible?Math.round(total/possible*100):0;
 
   let html=`
@@ -109,36 +112,45 @@ function render(){
       <div class="pct">${pct}%</div>
       <div class="pcs">${total} of ${possible} checks</div>
     </div>
-  </div>
-  <section><h2><span class="dot"></span>Habits</h2>`;
+  </div>`;
 
-  data.habits.forEach(h=>{
-    const isWeekly = /per week/i.test(h.target||"");
-    const startDay = isWeekly ? 3 : 1;
-    const endDay = isWeekly ? DAYS-1 : DAYS;
-    let done=0; for(let dd=startDay; dd<=endDay; dd++) if(data.completions[h.id+":"+dd]) done++;
-    const countLabel = isWeekly ? `${done} ticks` : `${done}/${DAYS}`;
-    html+=`<div class="habit">
-      <div class="hrow">
-        <span><span class="hname">${esc(h.name)}</span>${h.target?` <span class="htarget">· ${esc(h.target)}</span>`:""}</span>
-        <span class="hmeta"><span class="hcount">${countLabel}</span></span>
-      </div>
-      <div class="grid">`;
-    WD.forEach(w=> html+=`<div class="wd">${w}</div>`);
-    for(let i=0;i<LEAD;i++) html+=`<div></div>`;
-    for(let dd=1;dd<=DAYS;dd++){
-      const on=!!data.completions[h.id+":"+dd];
-      const disabled = dd < startDay || dd > endDay;
-      if(disabled){
-        html+=`<div class="cell off">${dd}</div>`;
+  CATS.forEach(g=>{
+    html+=`<section><h2><span class="dot"></span>${esc(g.label)}</h2>`;
+    data.habits.filter(h=>h.cat===g.cat).forEach(h=>{
+      const startDay = 3;
+      const endDay = DAYS-1;
+      let done=0; for(let dd=startDay; dd<=endDay; dd++) if(data.completions[h.id+":"+dd]) done++;
+      const weeklyMatch = (h.target||"").match(/(\d+)\s*×?\s*per week/i);
+      let countLabel;
+      if(weeklyMatch){
+        const perWeek = parseInt(weeklyMatch[1], 10);
+        const weeks = TRACK_DAYS/7; // 28 days = 4 weeks
+        const needed = perWeek*weeks;
+        countLabel = `${done} / ${needed}`;
       } else {
-        html+=`<div class="cell ${on?'on':''}" onclick="toggle('${h.id}',${dd})">${dd}</div>`;
+        countLabel = `${done}/${endDay-startDay+1}`;
       }
-    }
-    html+=`</div></div>`;
+      html+=`<div class="habit">
+        <div class="hrow">
+          <span><span class="hname">${esc(h.name)}</span>${h.target?` <span class="htarget">· ${esc(h.target)}</span>`:""}</span>
+          <span class="hmeta"><span class="hcount">${countLabel}</span></span>
+        </div>
+        <div class="grid">`;
+      WD.forEach(w=> html+=`<div class="wd">${w}</div>`);
+      for(let i=0;i<LEAD;i++) html+=`<div></div>`;
+      for(let dd=1;dd<=DAYS;dd++){
+        const on=!!data.completions[h.id+":"+dd];
+        const disabled = dd < startDay || dd > endDay;
+        if(disabled){
+          html+=`<div class="cell off">${dd}</div>`;
+        } else {
+          html+=`<div class="cell ${on?'on':''}" onclick="toggle('${h.id}',${dd})">${dd}</div>`;
+        }
+      }
+      html+=`</div></div>`;
+    });
+    html+=`</section>`;
   });
-
-  html+=`</section>`;
 
   html+=`<footer>Tap any day to mark it done. Everything saves on your phone.
     <br><button class="resetbtn" onclick="resetAll()">Reset all data</button>
